@@ -1,5 +1,6 @@
-"""Builds output/stats.svg, output/languages.svg and output/skills.svg for the profile README.
+"""Builds the SVGs in output/ for the profile README: header, stats, languages and inventory.
 
+Styled like the block-world portfolio (grass-topped panels, pixel font).
 Uses only the standard library. Reads STATS_TOKEN (optional, also counts private
 contributions) or GITHUB_TOKEN from the environment.
 """
@@ -12,15 +13,21 @@ from html import escape
 USER = "Aldafoor3"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "output")
 
-BG, BORDER, TEXT, MUTED, ACCENT = "#0d1117", "#30363d", "#e6edf3", "#8b949e", "#39d353"
-FONT = "font-family=\"'Segoe UI', Ubuntu, 'Helvetica Neue', sans-serif\""
+BG, TEXT, MUTED = "#1b1b1f", "#f2f2f2", "#a5a5ad"
+GRASS, GRASS_DARK, DIRT, DIRT_DARK, GOLD = "#5d9b2d", "#4a7d23", "#86603d", "#6b4c30", "#f2c94c"
+PIXEL = "font-family=\"'Press Start 2P', 'Courier New', monospace\" font-weight=\"bold\""
+MONO = "font-family=\"Consolas, 'DejaVu Sans Mono', monospace\""
 
-# Grouped like the Skills section of the portfolio (js/data.js)
+# Same skills and colors as the portfolio (js/data.js)
 SKILLS = [
-    ("Languages", ["Java", "TypeScript", "Python", "SQL", "C++", "Dart", "Pascal"]),
-    ("Frameworks", ["Spring Boot", "Angular", "React", "Flutter", "Flask", "FastAPI", "Streamlit"]),
-    ("ML & Data", ["PyTorch", "scikit-learn", "pandas", "NumPy", "OpenCV"]),
-    ("Tools", ["Git", "Docker", "PostgreSQL", "MySQL", "HMI"]),
+    ("Languages", [("Java", "#e76f00"), ("TypeScript", "#3178c6"), ("Python", "#f2c94c"), ("SQL", "#3d8bd9"),
+                   ("C++", "#5c8dbc"), ("Dart", "#2bb7f6"), ("Pascal", "#8a6dd8")]),
+    ("Frameworks", [("Spring Boot", "#6db33f"), ("Angular", "#dd0031"), ("React", "#61dafb"), ("Flutter", "#47c5fb"),
+                    ("Flask", "#d0d0d0"), ("FastAPI", "#05998b"), ("Streamlit", "#ff4b4b")]),
+    ("ML & Data", [("PyTorch", "#ee4c2c"), ("scikit-learn", "#f7931e"), ("pandas", "#8f7ce8"), ("NumPy", "#4dabcf"),
+                   ("OpenCV", "#5bd35b")]),
+    ("Tools", [("Git", "#f05033"), ("Docker", "#2496ed"), ("PostgreSQL", "#6c9bd2"), ("MySQL", "#f29111"),
+               ("HMI", "#9bd36a")]),
 ]
 
 
@@ -88,73 +95,115 @@ def fetch():
     }
 
 
-def card(width, height, title, body):
+def grass(width, y=0, h=10):
+    """Grass strip with a jagged pixel edge, like the top of a grass block."""
+    out = f'<rect x="0" y="{y}" width="{width}" height="{h}" fill="{GRASS}"/>'
+    for i, x in enumerate(range(0, width, 8)):
+        if i % 3 != 1:
+            out += f'<rect x="{x}" y="{y + h}" width="8" height="{4 if i % 2 else 8}" fill="{GRASS_DARK}"/>'
+    return out
+
+
+def svg(width, height, body):
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
-        f'<rect x="0.5" y="0.5" width="{width - 1}" height="{height - 1}" rx="6" fill="{BG}" stroke="{BORDER}"/>'
-        f'<text x="24" y="36" {FONT} font-size="17" font-weight="600" fill="{ACCENT}">{escape(title)}</text>'
-        f"{body}</svg>\n"
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+        f'viewBox="0 0 {width} {height}" shape-rendering="crispEdges">{body}'
+        f'<rect x="2" y="2" width="{width - 4}" height="{height - 4}" fill="none" stroke="#000" stroke-width="4"/></svg>\n'
     )
+
+
+def panel(width, height, title, body):
+    return svg(width, height,
+               f'<rect width="{width}" height="{height}" fill="{BG}"/>{grass(width)}'
+               f'<text x="22" y="50" {PIXEL} font-size="13" fill="{GOLD}">{escape(title)}</text>{body}')
+
+
+def header_svg():
+    w, h, ground = 880, 210, 160
+    stars = "".join(
+        f'<rect x="{(i * 97) % w}" y="{(i * 37) % 90 + 8}" width="3" height="3" fill="#fff">'
+        f'<animate attributeName="opacity" values="1;0.2;1" dur="{2 + i % 4}s" repeatCount="indefinite"/></rect>'
+        for i in range(1, 22)
+    )
+    dirt = f'<rect x="0" y="{ground + 12}" width="{w}" height="{h - ground - 12}" fill="{DIRT}"/>' + "".join(
+        f'<rect x="{x}" y="{ground + 24 + (x // 8 % 3) * 8}" width="8" height="8" fill="{DIRT_DARK}"/>'
+        for x in range(4, w, 40)
+    )
+    return svg(w, h,
+               '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">'
+               '<stop offset="0" stop-color="#1a2a4f"/><stop offset="1" stop-color="#3d5a8a"/></linearGradient></defs>'
+               f'<rect width="{w}" height="{h}" fill="url(#sky)"/>{stars}{grass(w, ground, 12)}{dirt}'
+               f'<text x="443" y="81" {PIXEL} font-size="34" fill="#000" fill-opacity="0.5" text-anchor="middle">KHALIL MEFTEHI</text>'
+               f'<text x="440" y="78" {PIXEL} font-size="34" fill="{TEXT}" text-anchor="middle">KHALIL MEFTEHI</text>'
+               f'<text x="440" y="106" {PIXEL} font-size="13" fill="{GOLD}" text-anchor="middle">&gt; junior software engineer'
+               '<tspan>_<animate attributeName="opacity" values="1;1;0;0" dur="1s" repeatCount="indefinite"/></tspan></text>'
+               f'<text x="440" y="138" {MONO} font-size="16" fill="#dfe7f5" text-anchor="middle">Java · Spring Boot · Angular · Machine Learning</text>')
 
 
 def stats_svg(s):
     rows = [
-        ("Total contributions", s["contributions"]),
+        ("Contributions", s["contributions"]),
         ("Commits", s["commits"]),
-        ("Public repositories", s["repos"]),
-        ("On GitHub since", s["since"]),
+        ("Public repos", s["repos"]),
+        ("Playing since", s["since"]),
     ]
     body = "".join(
-        f'<text x="24" y="{72 + i * 26}" {FONT} font-size="14" fill="{MUTED}">{label}</text>'
-        f'<text x="336" y="{72 + i * 26}" {FONT} font-size="14" font-weight="600" fill="{TEXT}" text-anchor="end">{value}</text>'
+        f'<text x="22" y="{88 + i * 30}" {MONO} font-size="15" fill="{MUTED}">{label}</text>'
+        f'<text x="338" y="{88 + i * 30}" {PIXEL} font-size="14" fill="{TEXT}" text-anchor="end">{value}</text>'
         for i, (label, value) in enumerate(rows)
     )
-    return card(360, 72 + len(rows) * 26, "GitHub Stats", body)
+    return panel(360, 80 + len(rows) * 30, "PLAYER STATS", body)
 
 
 def languages_svg(s):
     total = sum(size for _, (size, _) in s["langs"]) or 1
-    bar, x = "", 24.0
+    # 30 segments split by share, like an XP bar
+    bar, seg = "", 0
     for name, (size, color) in s["langs"]:
-        w = 312 * size / total
-        bar += f'<rect x="{x:.1f}" y="54" width="{w:.1f}" height="10" fill="{color}"/>'
-        x += w
-    bar = f'<clipPath id="r"><rect x="24" y="54" width="312" height="10" rx="5"/></clipPath><g clip-path="url(#r)">{bar}</g>'
+        for _ in range(max(1, round(30 * size / total))):
+            if seg < 30:
+                bar += f'<rect x="{22 + seg * 10.6:.0f}" y="68" width="8" height="12" fill="{color}"/>'
+                seg += 1
     legend = ""
     for i, (name, (size, color)) in enumerate(s["langs"]):
-        cx, cy = 24 + (i % 2) * 160, 92 + (i // 2) * 24
+        cx, cy = 22 + (i % 2) * 165, 112 + (i // 2) * 24
         legend += (
-            f'<circle cx="{cx + 5}" cy="{cy - 4}" r="5" fill="{color}"/>'
-            f'<text x="{cx + 16}" y="{cy}" {FONT} font-size="13" fill="{TEXT}">{escape(name)} '
-            f'<tspan fill="{MUTED}">{100 * size / total:.1f}%</tspan></text>'
+            f'<rect x="{cx}" y="{cy - 10}" width="10" height="10" fill="{color}"/>'
+            f'<text x="{cx + 18}" y="{cy}" {MONO} font-size="14" fill="{TEXT}">{escape(name)} '
+            f'<tspan fill="{MUTED}">{100 * size / total:.0f}%</tspan></text>'
         )
     rows = (len(s["langs"]) + 1) // 2
-    return card(360, 88 + rows * 24, "Top Languages", bar + legend)
+    return panel(360, 100 + rows * 24, "TOP LANGUAGES", bar + legend)
 
 
 def skills_svg():
-    width, body, y = 0, "", 70
+    width, body, y = 0, "", 72
     for group, items in SKILLS:
-        body += f'<text x="24" y="{y + 19}" {FONT} font-size="13" font-weight="600" fill="{MUTED}">{escape(group)}</text>'
-        x = 140
-        for item in items:
-            w = 22 + 7.6 * len(item)
+        body += f'<text x="22" y="{y + 20}" {MONO} font-size="14" fill="{MUTED}">{escape(group)}</text>'
+        x = 130
+        for name, color in items:
+            w = 36 + 7.8 * len(name)
+            # inventory slot: light rim, dark inside, colored block icon
             body += (
-                f'<rect x="{x}" y="{y}" width="{w:.0f}" height="28" rx="14" fill="#161b22" stroke="{BORDER}"/>'
-                f'<text x="{x + w / 2:.0f}" y="{y + 19}" {FONT} font-size="13" fill="{TEXT}" text-anchor="middle">{escape(item)}</text>'
+                f'<rect x="{x}" y="{y}" width="{w:.0f}" height="30" fill="#8b8b8b"/>'
+                f'<rect x="{x + 2}" y="{y + 2}" width="{w - 4:.0f}" height="26" fill="#373737"/>'
+                f'<rect x="{x + 9}" y="{y + 10}" width="10" height="10" fill="{color}"/>'
+                f'<text x="{x + 26}" y="{y + 20}" {MONO} font-size="14" fill="{TEXT}">{escape(name)}</text>'
             )
-            x += w + 8
+            x += w + 6
         width = max(width, int(x) + 16)
-        y += 42
-    return card(width, y + 10, "Tech Stack", body)
+        y += 40
+    return panel(width, y + 12, "INVENTORY", body)
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     s = fetch()
-    for name, svg in [("stats.svg", stats_svg(s)), ("languages.svg", languages_svg(s)), ("skills.svg", skills_svg())]:
+    files = {"header.svg": header_svg(), "stats.svg": stats_svg(s),
+             "languages.svg": languages_svg(s), "skills.svg": skills_svg()}
+    for name, content in files.items():
         with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
-            f.write(svg)
+            f.write(content)
     print(json.dumps({k: v for k, v in s.items() if k != "langs"}))
 
 

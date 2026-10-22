@@ -16,7 +16,7 @@ jobs:
         with:
           github_user_name: Aldafoor3
           outputs: |
-            dist/github-contribution-grid-snake-dark.svg?color_snake=#39d353&color_dots=#161b22,#0e4429,#006d32,#26a641,#39d353
+            dist/github-contribution-grid-snake-dark.svg?color_snake=#f2c94c&color_dots=#1b1b1f,#3b5d1f,#4a7d23,#5d9b2d,#7cc242
 
       - name: Publish to output branch
         uses: crazy-max/ghaction-github-pages@v4
